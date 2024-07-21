@@ -2,6 +2,8 @@
 #include "rlgl.h"
 #include "raymath.h"
 #include "CowPhys/shape/BoxShape.h"
+#include "CowPhys/math/Triangle.h"
+#include "ViewerHelper.h"
 
 namespace viewer {
 
@@ -14,8 +16,12 @@ Viewer::Viewer() : mWorld() {
     mCamera.projection = CAMERA_PERSPECTIVE;
     SetTargetFPS(60);
 
-    auto floor = mWorld.createStaticBody(new cp::BoxShape(10, 0.2f, 10), cp::Vec3d());
-    floor->setMass(1000);
+    auto t0 = cp::Triangle<double>(cp::Vec3d(0, 0, 0), cp::Vec3d(10, 0, 0), cp::Vec3d(10, 0, 10));
+    auto t1 = cp::Triangle<double>(cp::Vec3d(10, 0, 10), cp::Vec3d(0, 0, 10), cp::Vec3d(0, 0, 0));
+    auto test = mWorld.createStaticBody(new cp::MeshShape({t0, t1}), cp::Vec3d(-5, 0, -5));
+
+    // auto floor = mWorld.createStaticBody(new cp::BoxShape(10, 0.2f, 10), cp::Vec3d());
+    //floor->setMass(1000);
 
     //auto a = mWorld.createDynBody(new cp::BoxShape(.5, .5, .5), cp::Vec3d(0, 2, 0));
     //a->setMass(10);
@@ -24,7 +30,7 @@ Viewer::Viewer() : mWorld() {
 
 void Viewer::run() {
     while (!WindowShouldClose()) {
-        UpdateCamera(&mCamera, CAMERA_CUSTOM);
+        UpdateCamera(&mCamera, CAMERA_ORBITAL);
         update();
         draw();
     }
@@ -42,13 +48,13 @@ void Viewer::update() {
     if (IsKeyPressed(KEY_Q)) {
         auto body = mWorld.createDynBody(new cp::BoxShape(cp::Vec3f(0.5)),
                                          cp::Vec3d(-5, 3, .2));
-        body->applyForce(cp::Vec3f(10, 0, 0));
+        body->applyForce(cp::Vec3f(1, 0, 0));
     }
 
     if (IsKeyPressed(KEY_W)) {
         auto body = mWorld.createDynBody(new cp::BoxShape(cp::Vec3f(0.5)),
                                          cp::Vec3d(5, 3.1, 0));
-        body->applyForce(cp::Vec3f(-10, 0, 0));
+        body->applyForce(cp::Vec3f(-1, 0, 0));
     }
 }
 
@@ -88,16 +94,25 @@ void Viewer::drawBody(cp::Body *body, Color color) {
     Quaternion rotation = (Quaternion) {quat.x, quat.y, quat.z, quat.w};
     rlMultMatrixf(MatrixToFloat(QuaternionToMatrix(rotation)));
 
-    // Draw the cube at the origin (since we already translated to the body's position)
+    // Draw at the origin (since we already translated to the body's position)
 
     cp::Shape *shape = body->getShape();
     auto boxShape = dynamic_cast<cp::BoxShape *>(shape);
-
     if (boxShape != nullptr) {
         DrawCube((Vector3) {0, 0, 0},
                  boxShape->getHalfSize().x * 2.0,
                  boxShape->getHalfSize().y * 2.0,
                  boxShape->getHalfSize().z * 2.0, color);
+    }
+
+    auto meshShape = dynamic_cast<cp::MeshShape *>(shape);
+    if (meshShape != nullptr) {
+        for (auto triangle: meshShape->getTriangles()) {
+            Vector3 p0 = ViewerHelper::vec3ToVec3(triangle.p0);
+            Vector3 p1 = ViewerHelper::vec3ToVec3(triangle.p1);
+            Vector3 p2 = ViewerHelper::vec3ToVec3(triangle.p2);
+            DrawTriangle3D(p2, p1, p0, color);
+        }
     }
 
     rlPopMatrix();

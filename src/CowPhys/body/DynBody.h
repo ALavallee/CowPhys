@@ -44,6 +44,11 @@ public:
         mAngularVelocity = mAngularVelocity + angularAcceleration;
     }
 
+    void applyTorque(const Vec3f &torque) {
+        Vec3f angularAcceleration = mInertiaTensor.inverse() * torque;
+        mAngularVelocity = mAngularVelocity + angularAcceleration;
+    }
+
     Vec3f getVelocity() const {
         return mVelocity;
     }

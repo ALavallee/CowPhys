@@ -1,8 +1,9 @@
 #ifndef COWPHYS_COLLISION_H
 #define COWPHYS_COLLISION_H
 
-#include "CowPhys/math/SAT.h"
+
 #include "CowPhys/math/Vec3.h"
+#include "CowPhys/math/sat/SatInfo.h"
 
 namespace cp {
 
@@ -12,9 +13,7 @@ class Collision {
 
 public:
 
-    Collision(Body *a, Body *b, SATInfo sat) : mBodyA(a), mBodyB(b), mSat(sat) {
-
-    }
+    Collision(Body *a, Body *b, SATInfo sat) : mBodyA(a), mBodyB(b), mSat(sat) {}
 
     Body *getBodyA() {
         return mBodyA;

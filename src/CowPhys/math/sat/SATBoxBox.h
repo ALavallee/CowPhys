@@ -1,32 +1,19 @@
-#ifndef COWPHYS_SAT_H
-#define COWPHYS_SAT_H
+#ifndef COWPHYS_SATBOXBOX_H
+#define COWPHYS_SATBOXBOX_H
 
 #include <vector>
-#include "CowPhys/CowPhys.h"
-#include "Vec3.h"
-#include "Box.h"
+#include "SatInfo.h"
+#include "CowPhys/math/Box.h"
 
 namespace cp {
 
-struct SATInfo {
-    bool isColliding;
-    Vec3d normal;
-    double depth;
-    Vec3d resolution;
-    Vec3d contact;
-};
+class SATBoxBox {
 
-class SAT {
 public:
 
-    static SATInfo satNoCollision() {
-        SATInfo info;
-        info.isColliding = false;
-        return info;
-    }
+    static SATInfo sat(Boxd &boxA, Boxd &boxB) {
 
 
-    static SATInfo SATCollision(Boxd &boxA, Boxd &boxB) {
         auto verticesA = boxA.getVertices();
         auto verticesB = boxB.getVertices();
 
@@ -94,6 +81,7 @@ private:
         return !(maxA < minB || maxB < minA);
     }
 
+
     static Vec3d computeContactPoint(Boxd &boxA, Boxd &boxB, const Vec3d &axis, double depth) {
         // Placeholder for a more accurate contact point calculation
         Vec3d centerA = boxA.pos;
@@ -101,8 +89,9 @@ private:
         Vec3d midpoint = (centerA + centerB) / 2;
         return midpoint + axis * depth / 2;
     }
+
 };
 
 }
 
-#endif //COWPHYS_SAT_H
+#endif //COWPHYS_SATBOXBOX_H

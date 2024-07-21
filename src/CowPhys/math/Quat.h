@@ -57,12 +57,7 @@ struct Quat {
     }
 
     Quat operator*(T v) {
-        return {
-                w * v + x * v + y * v - z * v,
-                w * v - x * v + y * v + z * v,
-                w * v + x * v - y * v + z * v,
-                w * v - x * v - y * v - z * v
-        };
+        return {x * v, y * v, z * v, w * v};
     }
 
     Vec3d rotate(const Vec3d &v) const {
@@ -73,16 +68,6 @@ struct Quat {
         uv = uv * (2.0 * w);
         uuv = uuv * 2.0;
         return v + uv + uuv;
-    }
-
-    Quat lerp(const Quat<T> &end, T t) {
-        Quat<T> result;
-        result.x = x + (end.x - x) * t;
-        result.y = y + (end.y - y) * t;
-        result.z = z + (end.z - z) * t;
-        result.w = w + (end.w - w) * t;
-        result.normalize();
-        return result;
     }
 
     Quat<T> normalize() {

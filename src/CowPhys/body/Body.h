@@ -8,11 +8,13 @@
 #include "CowPhys/math/Vec3.h"
 #include "CowPhys/math/Box.h"
 #include "CowPhys/math/Quat.h"
-#include "CowPhys/math/SAT.h"
+#include "CowPhys/math/sat/SATTrianglesBox.h"
+#include "CowPhys/math/sat/SATBoxBox.h"
 #include "CowPhys/math/Mat3.h"
 #include "CowPhys/math/AABB.h"
 #include "CowPhys/shape/Shape.h"
 #include "CowPhys/shape/BoxShape.h"
+#include "CowPhys/shape/MeshShape.h"
 
 namespace cp {
 
@@ -24,14 +26,31 @@ public:
 
     SATInfo collides(Body *other) {
         auto boxLeft = dynamic_cast<BoxShape *>(mShape);
-        auto boxRight = dynamic_cast<BoxShape *>(other->getShape());
-        if (boxLeft != nullptr && boxRight != nullptr) {
+        if (boxLeft != nullptr) {
             auto boxA = boxLeft->getBox<double>(getPos(), getRotation().to<double>());
-            auto boxB = boxRight->getBox<double>(other->getPos(), other->getRotation().to<double>());
-            return SAT::SATCollision(boxA, boxB);
+
+            auto boxRight = dynamic_cast<BoxShape *>(other->getShape());
+            if (boxRight != nullptr) {
+                auto boxB = boxRight->getBox<double>(other->getPos(), other->getRotation().to<double>());
+                return SATBoxBox::sat(boxA, boxB);
+            }
+
+            auto meshRight = dynamic_cast<MeshShape *>(other->getShape());
+            if (meshRight != nullptr) {
+                return SATTrianglesBox::sat(meshRight->getTriangles(), other->getPos(), other->getRotation(), boxA);
+            }
         }
 
-        return SAT::satNoCollision();
+        auto meshLeft = dynamic_cast<MeshShape *>(getShape());
+        if (meshLeft != nullptr) {
+            auto boxRight = dynamic_cast<BoxShape *>(other->getShape());
+            if (boxRight != nullptr) {
+                auto box = boxRight->getBox<double>(getPos(), getRotation().to<double>());
+                return SATTrianglesBox::sat(meshLeft->getTriangles(), getPos(), getRotation(), box);
+            }
+        }
+
+        return SATInfo::noCollision();
     }
 
     Shape *getShape() {
@@ -90,6 +109,14 @@ public:
         return mFriction;
     }
 
+    void setUserData(void *userData) {
+        mUserData = userData;
+    }
+
+    void *getUserData() {
+        return mUserData;
+    }
+
 
 private:
 
@@ -104,6 +131,7 @@ private:
     Quatf mRotation;
     Shape *mShape;
     std::vector<Collision> mCollisions;
+    void *mUserData;
 };
 
 } // namespace cp
