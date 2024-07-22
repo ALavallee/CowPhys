@@ -71,6 +71,10 @@ public:
                                         static_cast<T>(z) * static_cast<T>(z)));
     }
 
+    T lengthSquared() const {
+        return x * x + y * y + z * z;
+    }
+
     // Linear interpolation between this vector and another vector
     Vec3<T> lerp(const Vec3<T> &rhs, T t) const {
         return Vec3<T>(x + (rhs.x - x) * t, y + (rhs.y - y) * t, z + (rhs.z - z) * t);

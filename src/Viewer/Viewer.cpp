@@ -18,14 +18,10 @@ Viewer::Viewer() : mWorld() {
 
     auto t0 = cp::Triangle<double>(cp::Vec3d(0, 0, 0), cp::Vec3d(10, 0, 0), cp::Vec3d(10, 0, 10));
     auto t1 = cp::Triangle<double>(cp::Vec3d(10, 0, 10), cp::Vec3d(0, 0, 10), cp::Vec3d(0, 0, 0));
-    auto test = mWorld.createStaticBody(new cp::MeshShape({t0, t1}), cp::Vec3d(-5, 0, -5));
+    auto test = mWorld.createStaticBody(new cp::BoxShape(-10, 0.1, -10), cp::Vec3d(0, 0, 0));
 
-    // auto floor = mWorld.createStaticBody(new cp::BoxShape(10, 0.2f, 10), cp::Vec3d());
-    //floor->setMass(1000);
-
-    //auto a = mWorld.createDynBody(new cp::BoxShape(.5, .5, .5), cp::Vec3d(0, 2, 0));
-    //a->setMass(10);
-    //a->applyForceAt(cp::Vec3f(1, -2, 1), cp::Vec3f(1, 2, 1));
+    auto a = mWorld.createDynBody(new cp::BoxShape(.5, .8, .5), cp::Vec3d(0, 2, 0));
+    auto b = mWorld.createDynBody(new cp::BoxShape(.5, .5, .5), cp::Vec3d(0.01, 4, 0));
 }
 
 void Viewer::run() {
@@ -47,13 +43,13 @@ void Viewer::update() {
 
     if (IsKeyPressed(KEY_Q)) {
         auto body = mWorld.createDynBody(new cp::BoxShape(cp::Vec3f(0.5)),
-                                         cp::Vec3d(-5, 3, .2));
+                                         cp::Vec3d(-3, 3, .2));
         body->applyForce(cp::Vec3f(1, 0, 0));
     }
 
     if (IsKeyPressed(KEY_W)) {
         auto body = mWorld.createDynBody(new cp::BoxShape(cp::Vec3f(0.5)),
-                                         cp::Vec3d(5, 3.1, 0));
+                                         cp::Vec3d(3, 3.1, 0));
         body->applyForce(cp::Vec3f(-1, 0, 0));
     }
 }

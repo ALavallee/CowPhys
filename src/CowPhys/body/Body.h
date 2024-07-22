@@ -8,7 +8,7 @@
 #include "CowPhys/math/Vec3.h"
 #include "CowPhys/math/Box.h"
 #include "CowPhys/math/Quat.h"
-#include "CowPhys/math/sat/SATTrianglesBox.h"
+#include "CowPhys/math/sat/SATTriBox.h"
 #include "CowPhys/math/sat/SATBoxBox.h"
 #include "CowPhys/math/Mat3.h"
 #include "CowPhys/math/AABB.h"
@@ -21,7 +21,7 @@ namespace cp {
 class Body {
 public:
     explicit Body(Shape *shape) : mShape(shape), mMass(1), mRestitution(0.2),
-                                  mFriction(0.6), mRotation(Quatf::identity()) {
+                                  mFriction(0.8), mRotation(Quatf::identity()) {
     }
 
     SATInfo collides(Body *other) {
@@ -37,7 +37,7 @@ public:
 
             auto meshRight = dynamic_cast<MeshShape *>(other->getShape());
             if (meshRight != nullptr) {
-                return SATTrianglesBox::sat(meshRight->getTriangles(), other->getPos(), other->getRotation(), boxA);
+                return SATTriBox::sat(meshRight->getTriangles(), other->getPos(), other->getRotation(), boxA);
             }
         }
 
@@ -46,7 +46,7 @@ public:
             auto boxRight = dynamic_cast<BoxShape *>(other->getShape());
             if (boxRight != nullptr) {
                 auto box = boxRight->getBox<double>(getPos(), getRotation().to<double>());
-                return SATTrianglesBox::sat(meshLeft->getTriangles(), getPos(), getRotation(), box);
+                return SATTriBox::sat(meshLeft->getTriangles(), getPos(), getRotation(), box);
             }
         }
 

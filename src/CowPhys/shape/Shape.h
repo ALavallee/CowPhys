@@ -9,10 +9,23 @@ class Shape {
 
 public:
 
+    Shape() : mUserData(nullptr) {
+
+    }
+
     virtual ~Shape() = default;
+
+    void *getUserData() {
+        return mUserData;
+    }
+
+    void setUserData(void *userData) {
+        mUserData = userData;
+    }
 
 
 private:
+    void *mUserData;
 
 };
 

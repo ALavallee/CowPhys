@@ -11,24 +11,30 @@ class DynBody : public Body {
 
 public:
 
-    explicit DynBody(Shape *shape) : Body(shape) {
+    explicit DynBody(Shape *shape) : Body(shape), mAllowRotation(true) {
         updateInertiaTensor();
     }
 
     void update(double deltaTime) {
         updateInertiaTensor();
         setPos(getPos() + mVelocity.to<double>() * deltaTime);
-        auto angularVelocityQuat = Quatf(mAngularVelocity.x, mAngularVelocity.y, mAngularVelocity.z, 0);
-        Quat deltaRotation = angularVelocityQuat * getRotation() * (0.5f * static_cast<float>(deltaTime));
-        setRotation((getRotation() + deltaRotation).normalize());
+        if (mAllowRotation) {
+            auto angularVelocityQuat = Quatf(mAngularVelocity.x, mAngularVelocity.y, mAngularVelocity.z, 0);
+            Quat deltaRotation = angularVelocityQuat * getRotation() * (0.5f * static_cast<float>(deltaTime));
+            setRotation((getRotation() + deltaRotation).normalize());
+        }
     }
 
     void applyFriction(double deltaTime) {
-        mVelocity = mVelocity * (1.f - getFriction() * static_cast<float>(deltaTime));
+        if (mAllowRotation) {
+            mVelocity = mVelocity * (1.f - getFriction() * static_cast<float>(deltaTime));
+        }
     }
 
     void applyDamping(double deltaTime) {
-        mAngularVelocity = mAngularVelocity * static_cast<float>(std::pow(1.0 - 0.98, deltaTime));
+        if (mAllowRotation) {
+            mAngularVelocity = mAngularVelocity * static_cast<float>(std::pow(1.0 - 0.98, deltaTime));
+        }
     }
 
     void applyForce(const Vec3f &force) {
@@ -38,15 +44,12 @@ public:
 
     void applyForceAt(const Vec3f &force, const Vec3f &pos) {
         applyForce(force);
-        Vec3f relativePos = pos - getPos().to<float>();
-        Vec3f torque = relativePos.cross(force);
-        Vec3f angularAcceleration = mInertiaTensor.inverse() * torque;
-        mAngularVelocity = mAngularVelocity + angularAcceleration;
-    }
-
-    void applyTorque(const Vec3f &torque) {
-        Vec3f angularAcceleration = mInertiaTensor.inverse() * torque;
-        mAngularVelocity = mAngularVelocity + angularAcceleration;
+        if (mAllowRotation) {
+            Vec3f relativePos = pos - getPos().to<float>();
+            Vec3f torque = relativePos.cross(force);
+            Vec3f angularAcceleration = mInertiaTensor.inverse() * torque;
+            mAngularVelocity = mAngularVelocity + angularAcceleration;
+        }
     }
 
     Vec3f getVelocity() const {
@@ -63,6 +66,14 @@ public:
 
     Vec3f getAngularVelocity() const {
         return mAngularVelocity;
+    }
+
+    void setRotationAllowed(bool allowed) {
+        mAllowRotation = allowed;
+    }
+
+    bool isRotationAllowed() {
+        return mAllowRotation;
     }
 
 private:
@@ -84,7 +95,8 @@ private:
     Vec3f mVelocity;
     Vec3f mAngularVelocity;
     Mat3 mInertiaTensor;
-
+    bool mAllowRotation;
+    
 };
 
 
