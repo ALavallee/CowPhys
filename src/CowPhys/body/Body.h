@@ -15,6 +15,7 @@
 #include "CowPhys/shape/Shape.h"
 #include "CowPhys/shape/BoxShape.h"
 #include "CowPhys/shape/MeshShape.h"
+#include "CowPhys/shape/CompShape.h"
 
 namespace cp {
 
@@ -25,32 +26,11 @@ public:
     }
 
     SATInfo collides(Body *other) {
-        auto boxLeft = dynamic_cast<BoxShape *>(mShape);
-        if (boxLeft != nullptr) {
-            auto boxA = boxLeft->getBox<double>(getPos(), getRotation().to<double>());
+        return mShape->collision(getPos(), getRotation(), other->getShape(), other->getPos(), other->getRotation());
+    }
 
-            auto boxRight = dynamic_cast<BoxShape *>(other->getShape());
-            if (boxRight != nullptr) {
-                auto boxB = boxRight->getBox<double>(other->getPos(), other->getRotation().to<double>());
-                return SATBoxBox::sat(boxA, boxB);
-            }
-
-            auto meshRight = dynamic_cast<MeshShape *>(other->getShape());
-            if (meshRight != nullptr) {
-                return SATTriBox::sat(meshRight->getTriangles(), other->getPos(), other->getRotation(), boxA);
-            }
-        }
-
-        auto meshLeft = dynamic_cast<MeshShape *>(getShape());
-        if (meshLeft != nullptr) {
-            auto boxRight = dynamic_cast<BoxShape *>(other->getShape());
-            if (boxRight != nullptr) {
-                auto box = boxRight->getBox<double>(getPos(), getRotation().to<double>());
-                return SATTriBox::sat(meshLeft->getTriangles(), getPos(), getRotation(), box);
-            }
-        }
-
-        return SATInfo::noCollision();
+    RaycastInfo raycast(Ray ray) {
+        return mShape->raycast(ray, getPos(), getRotation());
     }
 
     Shape *getShape() {

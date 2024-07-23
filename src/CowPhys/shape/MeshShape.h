@@ -5,6 +5,8 @@
 #include <vector>
 #include "Shape.h"
 #include "CowPhys/math/Triangle.h"
+#include "CowPhys/math/Quat.h"
+#include "CowPhys/math/sat/SatInfo.h"
 
 namespace cp {
 
@@ -21,6 +23,9 @@ public:
     void addTriangle(Triangle<double> triangle) {
         mTriangles.emplace_back(triangle);
     }
+
+    SATInfo collision(Vec3d pos, Quatf rotation, Shape *other, Vec3d otherPos, Quatf otherRot) override;
+
 
     const std::vector<Triangle<double>> &getTriangles() {
         return mTriangles;

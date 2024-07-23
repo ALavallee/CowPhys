@@ -5,6 +5,7 @@
 #include "body/Body.h"
 #include "CowPhys/body/DynBody.h"
 #include "CowPhys/body/StaticBody.h"
+#include "WorldRaycast.h"
 
 namespace cp {
 
@@ -13,6 +14,8 @@ class PhysWorld {
 public:
 
     void update(double deltaTime);
+
+    WorldRaycast raycast(Vec3d pos, Vec3d to, double maxRange);
 
     DynBody *createDynBody(Shape *shape, Vec3d pos) {
         auto newBody = new DynBody(shape);
@@ -35,7 +38,6 @@ public:
     std::vector<StaticBody *> &getStaticBodies() {
         return mStaticBodies;
     }
-
 
 private:
     void resolveCollision(DynBody *bodyA, DynBody *bodyB, SATInfo &collision, double deltaTime);

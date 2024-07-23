@@ -31,6 +31,24 @@ void PhysWorld::update(double deltaTime) {
 
 }
 
+WorldRaycast PhysWorld::raycast(cp::Vec3d pos, cp::Vec3d to, double maxRange) {
+    WorldRaycast worldRaycast;
+    Ray ray;
+    ray.pos = pos;
+    ray.dir = (to - pos).normalize();
+    for (auto body: mDynBodies) {
+        auto bodyRay = body->raycast(ray);
+        if (bodyRay.hit && bodyRay.distance < maxRange) {
+            if (worldRaycast.raycast.distance > bodyRay.distance || worldRaycast.raycast.hit == false) {
+                worldRaycast.raycast = bodyRay;
+                worldRaycast.body_hit = body;
+            }
+        }
+    }
+
+    return worldRaycast;
+}
+
 void PhysWorld::resolveCollision(DynBody *bodyA, DynBody *bodyB, SATInfo &collision, double deltaTime) {
 
     Vec3d normal = collision.normal;
@@ -83,7 +101,7 @@ void PhysWorld::resolveCollision(DynBody *bodyA, StaticBody *bodyB, SATInfo &col
 
     // Apply impulse at center of mass
     bodyA->applyForceAt(-impulse, bodyA->getPos().to<float>());
-    
+
     // Now move them outside of one and another
     Vec3d MTV = collision.resolution;
     Vec3d collisionNormal = MTV.normalize();

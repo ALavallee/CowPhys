@@ -19,6 +19,10 @@ public:
         return result;
     }
 
+    static cp::Vec3d vec3ToVec3(Vector3 v) {
+        return {v.x, v.y, v.z};
+    }
+
 
 };
 

@@ -60,6 +60,24 @@ struct Quat {
         return {x * v, y * v, z * v, w * v};
     }
 
+    Vec3<T> operator*(const Vec3<T> &v) const {
+        Vec3<T> u(x, y, z);
+        Vec3<T> uv = u.cross(v);
+        Vec3<T> uuv = u.cross(uv);
+        uv = uv * (2.0f * w);
+        uuv = uuv * 2.0f;
+        return v + uv + uuv;
+    }
+
+    Quat<T> inverse() const {
+        T normSq = x * x + y * y + z * z + w * w;
+        if (normSq > 0) {
+            T invNorm = 1 / normSq;
+            return {-x * invNorm, -y * invNorm, -z * invNorm, w * invNorm};
+        }
+        return Quat<T>::identity(); // or handle as an error case
+    }
+
     Vec3d rotate(const Vec3d &v) const {
         // Quaternion rotation implementation
         Vec3d qVec(x, y, z);
@@ -88,6 +106,10 @@ struct Quat {
 
     T norm() const {
         return std::sqrt(dot(*this));
+    }
+
+    Quat<T> conjugate() const {
+        return {-x, -y, -z, w};
     }
 
     template<class C>

@@ -4,6 +4,7 @@
 #include "CowPhys/shape/BoxShape.h"
 #include "CowPhys/math/Triangle.h"
 #include "ViewerHelper.h"
+#include "CowPhys/shape/CompShape.h"
 
 namespace viewer {
 
@@ -20,8 +21,19 @@ Viewer::Viewer() : mWorld() {
     auto t1 = cp::Triangle<double>(cp::Vec3d(10, 0, 10), cp::Vec3d(0, 0, 10), cp::Vec3d(0, 0, 0));
     auto test = mWorld.createStaticBody(new cp::BoxShape(-10, 0.1, -10), cp::Vec3d(0, 0, 0));
 
-    auto a = mWorld.createDynBody(new cp::BoxShape(.5, .8, .5), cp::Vec3d(0, 2, 0));
-    auto b = mWorld.createDynBody(new cp::BoxShape(.5, .5, .5), cp::Vec3d(0.01, 4, 0));
+    //auto a = mWorld.createDynBody(new cp::BoxShape(.5, .8, .5), cp::Vec3d(0, 2, 0));
+    //auto b = mWorld.createDynBody(new cp::BoxShape(.5, .5, .5), cp::Vec3d(0.01, 4, 0));
+
+
+    auto subOne = new cp::BoxShape(.2, .2, .2);
+    auto subTwo = new cp::BoxShape(.2, .2, .2);
+    auto comp = new cp::CompShape();
+    comp->addShape(subOne, cp::Vec3d());
+    comp->addShape(subTwo, cp::Vec3d(1, 1, 1));
+
+    auto c = mWorld.createDynBody(comp, cp::Vec3d(0, 3, 0));
+
+
 }
 
 void Viewer::run() {
@@ -55,22 +67,36 @@ void Viewer::update() {
 }
 
 void Viewer::draw() {
+
     BeginDrawing();
     ClearBackground(RAYWHITE);
     BeginMode3D(mCamera);
+
+
+    Ray ray = GetScreenToWorldRay(GetMousePosition(), mCamera);
+    auto raycast = mWorld.raycast(ViewerHelper::vec3ToVec3(ray.position),
+                                  ViewerHelper::vec3ToVec3(ray.direction), 1000);
 
     Color colors[] = {RED, BLUE, GREEN, PURPLE};
 
     int current = 0;
 
     for (auto body: mWorld.getDynBodies()) {
-        drawBody(body, colors[++current % 4]);
+        if (raycast.body_hit != body) {
+            drawBody(body, colors[++current % 4]);
+        } else {
+            drawBody(body, BLACK);
+        }
     }
 
     current = 0;
 
     for (auto body: mWorld.getStaticBodies()) {
-        drawBody(body, colors[++current % 4]);
+        if (raycast.body_hit != body) {
+            drawBody(body, colors[++current % 4]);
+        } else {
+            drawBody(body, BLACK);
+        }
     }
 
     EndMode3D();
@@ -108,6 +134,20 @@ void Viewer::drawBody(cp::Body *body, Color color) {
             Vector3 p1 = ViewerHelper::vec3ToVec3(triangle.p1);
             Vector3 p2 = ViewerHelper::vec3ToVec3(triangle.p2);
             DrawTriangle3D(p2, p1, p0, color);
+        }
+    }
+
+    auto compShape = dynamic_cast<cp::CompShape *>(shape);
+    if (compShape != nullptr) {
+        for (size_t i = 0; i < compShape->getShapesCount(); ++i) {
+            auto comp = compShape->getShape(i);
+            auto subBox = dynamic_cast<cp::BoxShape *>(comp.shape);
+            if (subBox != nullptr) {
+                DrawCube(ViewerHelper::vec3ToVec3(comp.position),
+                         subBox->getHalfSize().x * 2.0,
+                         subBox->getHalfSize().y * 2.0,
+                         subBox->getHalfSize().z * 2.0, color);
+            }
         }
     }
 
