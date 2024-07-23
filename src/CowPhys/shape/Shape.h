@@ -33,6 +33,10 @@ public:
         return RaycastInfo::noHit();
     }
 
+    virtual std::vector<Vec3d> getVertices(Vec3d pos, Quatf rotation) {
+        return {};
+    }
+
 
 private:
     void *mUserData;

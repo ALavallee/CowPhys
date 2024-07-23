@@ -60,6 +60,11 @@ public:
         return Raycast::raycastBox(ray, getBox(pos, rotation.to<double>()));
     }
 
+    std::vector<Vec3d> getVertices(Vec3d pos, Quatf rotation) override {
+        auto vertices = getBox(pos, rotation.to<double>()).getVertices();
+        return {vertices.begin(), vertices.end()};
+    }
+
 private:
 
     Vec3f mHalfSize;
