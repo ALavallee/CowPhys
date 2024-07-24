@@ -1,4 +1,5 @@
 #include "PhysWorld.h"
+#include "CowPhys/math/algorithm/GJK.h"
 
 namespace cp {
 
@@ -14,21 +15,30 @@ void PhysWorld::update(double deltaTime) {
 
         for (auto other: mDynBodies) {
             if (body != other && body < other) { // this check so there is only one collision
-                auto sat = body->collides(other);
-                if (sat.isColliding) {
-                    resolveCollision(body, other, sat, deltaTime);
+                auto a = body->getShape()->getVertices(body->getPos(), body->getRotation());
+                auto b = other->getShape()->getVertices(other->getPos(), other->getRotation());
+                Simplex simplex;
+                if (GJK::gjk(simplex, a, b)) {
+                    auto epa = EPA::collisionPoint(simplex, a, b);
+                    if (epa.collides) {
+                        resolveCollision(body, other, epa, deltaTime);
+                    }
                 }
             }
         }
 
         for (auto other: mStaticBodies) {
-            auto sat = body->collides(other);
-            if (sat.isColliding) {
-                resolveCollision(body, other, sat, deltaTime);
+            auto a = body->getShape()->getVertices(body->getPos(), body->getRotation());
+            auto b = other->getShape()->getVertices(other->getPos(), other->getRotation());
+            Simplex simplex;
+            if (GJK::gjk(simplex, a, b)) {
+                auto epa = EPA::collisionPoint(simplex, a, b);
+                if (epa.collides) {
+                    resolveCollision(body, other, epa, deltaTime);
+                }
             }
         }
     }
-
 }
 
 WorldRaycast PhysWorld::raycast(cp::Vec3d pos, cp::Vec3d to, double maxRange) {
@@ -49,7 +59,7 @@ WorldRaycast PhysWorld::raycast(cp::Vec3d pos, cp::Vec3d to, double maxRange) {
     return worldRaycast;
 }
 
-void PhysWorld::resolveCollision(DynBody *bodyA, DynBody *bodyB, SATInfo &collision, double deltaTime) {
+void PhysWorld::resolveCollision(DynBody *bodyA, DynBody *bodyB, CollisionPoint &collision, double deltaTime) {
 
     Vec3d normal = collision.normal;
 
@@ -62,10 +72,9 @@ void PhysWorld::resolveCollision(DynBody *bodyA, DynBody *bodyB, SATInfo &collis
     impulseScalar /= bodyA->getMassInverse() + bodyB->getMassInverse();
     Vec3f impulse = normal.to<float>() * impulseScalar;
 
-    Vec3f pointOfCollision = collision.contact.to<float>();
+    Vec3f pointOfCollision = collision.contactPoint.to<float>();
     bodyA->applyForceAt(-impulse, pointOfCollision);
     bodyB->applyForceAt(impulse, pointOfCollision);
-
 
     // now move them outside of one and another
     Vec3d MTV = collision.resolution;
@@ -86,7 +95,7 @@ void PhysWorld::resolveCollision(DynBody *bodyA, DynBody *bodyB, SATInfo &collis
     }
 }
 
-void PhysWorld::resolveCollision(DynBody *bodyA, StaticBody *bodyB, SATInfo &collision, double deltaTime) {
+void PhysWorld::resolveCollision(DynBody *bodyA, StaticBody *bodyB, CollisionPoint &collision, double deltaTime) {
     const float largeMass = 1e5f; // Still large, but slightly lower
     const float staticFriction = 0.7f; // Add static friction
 

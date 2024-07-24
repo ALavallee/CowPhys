@@ -14,12 +14,16 @@ struct CollisionPoint {
     bool collides;
     double depth;
     Vec3d normal;
+    Vec3d contactPoint;
+    Vec3d resolution;
 };
 
 class EPA {
 
 public:
-    CollisionPoint collisionPoint(Simplex &simplex, std::vector<Vec3d> &verticesA, std::vector<Vec3d> &verticesB) {
+    static CollisionPoint
+    collisionPoint(Simplex &simplex, std::vector<Vec3d> &verticesA, std::vector<Vec3d> &verticesB,
+                   int maxIterations = 100) {
         std::vector<Vec3d> polytope(simplex.begin(), simplex.end());
         std::vector<size_t> faces = {
                 0, 1, 2,
@@ -28,18 +32,18 @@ public:
                 1, 3, 2
         };
 
-        // list: vec4(normal, distance), index: min distance
         auto [normals, minFace] = getFaceNormals(polytope, faces);
 
         Vec3d minNormal;
         double minDistance = std::numeric_limits<double>::max();
+        int iterations = 0;
 
-        while (minDistance == std::numeric_limits<double>::max()) {
+        while (iterations < maxIterations) {
             minNormal = normals[minFace].xyz();
             minDistance = normals[minFace].w;
 
             Vec3d support = sup(verticesA, verticesB, minNormal);
-            float sDistance = minNormal.dot(support);
+            double sDistance = minNormal.dot(support);
 
             if (std::abs(sDistance - minDistance) > 0.001f) {
                 minDistance = std::numeric_limits<double>::max();
@@ -49,9 +53,9 @@ public:
                     if (sameDirection(normals[i], support)) {
                         size_t f = i * 3;
 
-                        AddIfUniqueEdge(uniqueEdges, faces, f, f + 1);
-                        AddIfUniqueEdge(uniqueEdges, faces, f + 1, f + 2);
-                        AddIfUniqueEdge(uniqueEdges, faces, f + 2, f);
+                        addIfUniqueEdge(uniqueEdges, faces, f, f + 1);
+                        addIfUniqueEdge(uniqueEdges, faces, f + 1, f + 2);
+                        addIfUniqueEdge(uniqueEdges, faces, f + 2, f);
 
                         faces[f + 2] = faces.back();
                         faces.pop_back();
@@ -60,7 +64,7 @@ public:
                         faces[f] = faces.back();
                         faces.pop_back();
 
-                        normals[i] = normals.back(); // pop-erase
+                        normals[i] = normals.back();
                         normals.pop_back();
 
                         i--;
@@ -91,13 +95,34 @@ public:
 
                 faces.insert(faces.end(), newFaces.begin(), newFaces.end());
                 normals.insert(normals.end(), newNormals.begin(), newNormals.end());
+            } else {
+                break;
             }
+
+            iterations++;
         }
 
         CollisionPoint points;
-        points.normal = minNormal;
-        points.depth = minDistance + 0.001f;
-        points.collides = true;
+        if (iterations == maxIterations) {
+            points.collides = false;
+        } else {
+            points.normal = minNormal;
+            points.depth = minDistance + 0.001f;
+            points.collides = true;
+
+            // Compute contact point
+            Vec3d contactPoint = Vec3d(0.0, 0.0, 0.0);
+            size_t faceIndex = minFace * 3;
+            for (size_t i = 0; i < 3; ++i) {
+                contactPoint = contactPoint + polytope[faces[faceIndex + i]];
+            }
+            contactPoint = contactPoint / 3.0;
+            points.contactPoint = contactPoint;
+
+            // Compute resolution vector
+            points.resolution = minNormal * points.depth;
+        }
+
         return points;
     }
 
@@ -135,12 +160,12 @@ private:
     }
 
     static void
-    AddIfUniqueEdge(std::vector<std::pair<size_t, size_t>> &edges, const std::vector<size_t> &faces, size_t a,
+    addIfUniqueEdge(std::vector<std::pair<size_t, size_t>> &edges, const std::vector<size_t> &faces, size_t a,
                     size_t b) {
-        auto reverse = std::find(                       //      0--<--3
-                edges.begin(),                              //     / \ B /   A: 2-0
-                edges.end(),                                //    / A \ /    B: 0-2
-                std::make_pair(faces[b], faces[a]) //   1-->--2
+        auto reverse = std::find(
+                edges.begin(),
+                edges.end(),
+                std::make_pair(faces[b], faces[a])
         );
 
         if (reverse != edges.end()) {
@@ -156,7 +181,7 @@ private:
 
     static Vec3d findFurthestPoint(std::vector<Vec3d> &vertices, Vec3d direction) {
         Vec3d maxPoint;
-        double maxDistance = std::numeric_limits<double>::max();
+        double maxDistance = -std::numeric_limits<double>::max();
 
         for (auto vertex: vertices) {
             double distance = vertex.dot(direction);
@@ -174,7 +199,6 @@ private:
     }
 
 };
-
 
 }
 

@@ -14,10 +14,9 @@ class GJK {
 
 public:
 
-    static bool gjk(std::vector<Vec3d> &verticesA, std::vector<Vec3d> &verticesB) {
+    static bool gjk(Simplex &points, std::vector<Vec3d> &verticesA, std::vector<Vec3d> &verticesB) {
         Vec3d support = sup(verticesA, verticesB, Vec3d(1, 0, 0));
-
-        Simplex points;
+        
         points.push_front(support);
         Vec3d direction = -support;
 
@@ -42,7 +41,7 @@ public:
 
     static Vec3d findFurthestPoint(std::vector<Vec3d> &vertices, Vec3d direction) {
         Vec3d maxPoint;
-        double maxDistance = std::numeric_limits<double>::max();
+        double maxDistance = -std::numeric_limits<double>::max();
 
         for (auto vertex: vertices) {
             double distance = vertex.dot(direction);

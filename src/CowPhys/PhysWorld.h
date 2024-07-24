@@ -6,6 +6,8 @@
 #include "CowPhys/body/DynBody.h"
 #include "CowPhys/body/StaticBody.h"
 #include "WorldRaycast.h"
+#include "CowPhys/math/algorithm/EPA.h"
+#include "WorldRaycast.h"
 
 namespace cp {
 
@@ -40,9 +42,9 @@ public:
     }
 
 private:
-    void resolveCollision(DynBody *bodyA, DynBody *bodyB, SATInfo &collision, double deltaTime);
+    void resolveCollision(DynBody *bodyA, DynBody *bodyB, CollisionPoint &collision, double deltaTime);
 
-    void resolveCollision(DynBody *bodyA, StaticBody *bodyB, SATInfo &collision, double deltaTime);
+    void resolveCollision(DynBody *bodyA, StaticBody *bodyB, CollisionPoint &collision, double deltaTime);
 
     std::vector<DynBody *> mDynBodies;
     std::vector<StaticBody *> mStaticBodies;

@@ -55,14 +55,14 @@ void Viewer::update() {
 
     if (IsKeyPressed(KEY_Q)) {
         auto body = mWorld.createDynBody(new cp::BoxShape(cp::Vec3f(0.5)),
-                                         cp::Vec3d(-3, 3, .2));
-        body->applyForce(cp::Vec3f(1, 0, 0));
+                                         cp::Vec3d(-3, 3, 0));
+        body->applyForce(cp::Vec3f(10, 0, 0));
     }
 
     if (IsKeyPressed(KEY_W)) {
         auto body = mWorld.createDynBody(new cp::BoxShape(cp::Vec3f(0.5)),
-                                         cp::Vec3d(3, 3.1, 0));
-        body->applyForce(cp::Vec3f(-1, 0, 0));
+                                         cp::Vec3d(3, 3, 0));
+        body->applyForce(cp::Vec3f(-10, 0, 0));
     }
 }
 
