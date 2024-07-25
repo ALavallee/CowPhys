@@ -19,9 +19,10 @@ Viewer::Viewer() : mWorld() {
 
     auto t0 = cp::Triangle<double>(cp::Vec3d(0, 0, 0), cp::Vec3d(10, 0, 0), cp::Vec3d(10, 0, 10));
     auto t1 = cp::Triangle<double>(cp::Vec3d(10, 0, 10), cp::Vec3d(0, 0, 10), cp::Vec3d(0, 0, 0));
-    auto test = mWorld.createStaticBody(new cp::BoxShape(-10, 0.1, -10), cp::Vec3d(0, 0, 0));
+    auto test = mWorld.createStaticBody(new cp::BoxShape(10, 0.1, 10), cp::Vec3d(0, 0, 0));
 
-    //auto a = mWorld.createDynBody(new cp::BoxShape(.5, .8, .5), cp::Vec3d(0, 2, 0));
+    auto a = mWorld.createDynBody(new cp::BoxShape(.5, .5, .5), cp::Vec3d(0, 2, 0));
+    a->setRotation(cp::Quatf::fromEuler(0, 3.1415 / 4.0, 3.1415 / 4.0));
     //auto b = mWorld.createDynBody(new cp::BoxShape(.5, .5, .5), cp::Vec3d(0.01, 4, 0));
 
 

@@ -28,18 +28,6 @@ public:
 
     }
 
-    SATInfo collision(Vec3d pos, Quatf rotation, Shape *other, Vec3d otherPos, Quatf otherRot) override {
-        for (auto &comp: mComposites) {
-            auto shape = comp.shape;
-            auto sat = shape->collision(pos + comp.position, rotation + comp.rotation, other, otherPos, otherRot);
-            if (sat.isColliding) {
-                return sat;
-            }
-        }
-
-        return SATInfo::noCollision();
-    }
-
     void addShape(Shape *shape, Vec3d pos, Quatf rotation = Quatf::identity()) {
         mComposites.emplace_back(shape, pos, rotation);
     }

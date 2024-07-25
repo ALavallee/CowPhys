@@ -3,13 +3,10 @@
 
 #include <vector>
 #include <iostream>
-#include "Collision.h"
 #include "CowPhys/CowPhys.h"
 #include "CowPhys/math/Vec3.h"
 #include "CowPhys/math/Box.h"
 #include "CowPhys/math/Quat.h"
-#include "CowPhys/math/sat/SATTriBox.h"
-#include "CowPhys/math/sat/SATBoxBox.h"
 #include "CowPhys/math/Mat3.h"
 #include "CowPhys/math/AABB.h"
 #include "CowPhys/shape/Shape.h"
@@ -23,10 +20,6 @@ class Body {
 public:
     explicit Body(Shape *shape) : mShape(shape), mMass(1), mRestitution(0.2),
                                   mFriction(0.8), mRotation(Quatf::identity()) {
-    }
-
-    SATInfo collides(Body *other) {
-        return mShape->collision(getPos(), getRotation(), other->getShape(), other->getPos(), other->getRotation());
     }
 
     RaycastInfo raycast(Ray ray) {
@@ -65,18 +58,6 @@ public:
         return mRotation;
     }
 
-    void addCollision(const Collision &collision) {
-        mCollisions.emplace_back(collision);
-    }
-
-    const std::vector<Collision> &getCollisions() const {
-        return mCollisions;
-    }
-
-    void clearCollisions() {
-        mCollisions.clear();
-    }
-
     void setRestitution(float restitution) {
         mRestitution = restitution;
     }
@@ -110,7 +91,6 @@ private:
     Vec3<Coord> mPosition;
     Quatf mRotation;
     Shape *mShape;
-    std::vector<Collision> mCollisions;
     void *mUserData;
 };
 

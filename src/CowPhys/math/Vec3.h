@@ -108,6 +108,10 @@ public:
         return result;
     }
 
+    Vec3<T> round() {
+        return {std::round(x), std::round(y), std::round(z)};
+    }
+
     Vec3<T> min(const Vec3<T> &rhs) const {
         return Vec3<T>(std::min(x, rhs.x), std::min(y, rhs.y), std::min(z, rhs.z));
     }
