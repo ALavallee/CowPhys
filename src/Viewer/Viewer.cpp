@@ -26,13 +26,13 @@ Viewer::Viewer() : mWorld() {
     //auto b = mWorld.createDynBody(new cp::BoxShape(.5, .5, .5), cp::Vec3d(0.01, 4, 0));
 
 
-    auto subOne = new cp::BoxShape(.2, .2, .2);
+    /*auto subOne = new cp::BoxShape(.2, .2, .2);
     auto subTwo = new cp::BoxShape(.2, .2, .2);
     auto comp = new cp::CompShape();
     comp->addShape(subOne, cp::Vec3d());
-    comp->addShape(subTwo, cp::Vec3d(1, 1, 1));
+    comp->addShape(subTwo, cp::Vec3d(1, 1, 1));*/
 
-    auto c = mWorld.createDynBody(comp, cp::Vec3d(0, 3, 0));
+    //auto c = mWorld.createDynBody(comp, cp::Vec3d(0, 3, 0));
 
 
 }

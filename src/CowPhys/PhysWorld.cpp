@@ -71,54 +71,45 @@ void PhysWorld::resolveCollision(DynBody *bodyA, DynBody *bodyB, ShapeCollision 
 
     // now move them outside of one and another
     Vec3d MTV = collision.resolution;
-    Vec3d collisionNormal = MTV.normalize();
-
-    Vec3d centerA = bodyA->getPos();
-    Vec3d centerB = bodyB->getPos();
-
-    Vec3d centerToCenter = centerB - centerA;
-    double dotProduct = collisionNormal.dot(centerToCenter);
-
-    if (dotProduct > 0.0) {
-        bodyA->setPos(bodyA->getPos() - MTV * 0.5);
-        bodyB->setPos(bodyB->getPos() + MTV * 0.5);
-    } else {
-        bodyA->setPos(bodyA->getPos() + MTV * 0.5);
-        bodyB->setPos(bodyB->getPos() - MTV * 0.5);
-    }
+    bodyA->setPos(bodyA->getPos() - MTV * 0.5);
+    bodyB->setPos(bodyB->getPos() + MTV * 0.5);
 }
 
 void PhysWorld::resolveCollision(DynBody *bodyA, StaticBody *bodyB, ShapeCollision &collision, double deltaTime) {
     const float largeMass = 1e5f; // Still large, but slightly lower
-    const float staticFriction = 0.7f; // Add static friction
 
     Vec3d normal = collision.normal;
     Vec3f relativeVelocity = -bodyA->getVelocity();
     float velocityAlongNormal = relativeVelocity.dot(normal.to<float>());
 
-    // Calculate impulse with potential angular effects)
+    // Calculate impulse with potential angular effects
     float impulseScalar = -(1.0f + std::min(bodyA->getRestitution(), bodyB->getRestitution())) * velocityAlongNormal;
     impulseScalar /= bodyA->getMassInverse() + (1.0f / largeMass);
     Vec3f impulse = normal.to<float>() * impulseScalar;
 
-    // Apply impulse at center of mass
+    // Apply normal impulse at center of mass
     bodyA->applyForceAt(-impulse, bodyA->getPos().to<float>());
 
-    // Now move them outside of one and another
-    Vec3d MTV = collision.resolution;
-    Vec3d collisionNormal = MTV.normalize();
+    // Calculate friction
+    Vec3f tangent = (relativeVelocity - (normal.to<float>() * velocityAlongNormal)).normalize();
+    float velocityAlongTangent = relativeVelocity.dot(tangent);
 
-    Vec3d centerA = bodyA->getPos();
-    Vec3d centerB = bodyB->getPos();
+    // Friction coefficient
+    float frictionCoefficient = std::min(bodyA->getFriction(), bodyB->getFriction());
 
-    Vec3d centerToCenter = centerB - centerA;
-    double dotProduct = collisionNormal.dot(centerToCenter);
+    // Calculate friction impulse scalar
+    float frictionImpulseScalar = -velocityAlongTangent / (bodyA->getMassInverse() + (1.0f / largeMass));
 
-    if (dotProduct > 0.0) {
-        bodyA->setPos(bodyA->getPos() - MTV);
-    } else {
-        bodyA->setPos(bodyA->getPos() + MTV);
-    }
+    // Clamp friction impulse to the Coulomb's law
+    float maxFrictionImpulse = impulseScalar * frictionCoefficient;
+    frictionImpulseScalar = std::clamp(frictionImpulseScalar, -maxFrictionImpulse, maxFrictionImpulse);
+
+    // Apply friction impulse
+    Vec3f frictionImpulse = tangent * frictionImpulseScalar;
+    bodyA->applyForceAt(-frictionImpulse, bodyA->getPos().to<float>());
+
+    // Adjust position to resolve penetration
+    bodyA->setPos(bodyA->getPos() - collision.resolution);
 }
 
 }

@@ -53,13 +53,14 @@ public:
                             Vec3d distanceVec = pointPos - right.pos;
                             double depth = distanceVec.length();
                             if (depth > maxDepth) {
+                                maxDepth = depth;
                                 collision.hasCollision = true;
                                 collision.contactPoint = pointPos;
-                                collision.normal = (pointPos - right.pos).normalize();
                             }
 
                             if (depth < minDepth) {
                                 minDepth = depth;
+                                collision.normal = (pointPos - left.pos).normalize();
                             }
                         }
                     }
