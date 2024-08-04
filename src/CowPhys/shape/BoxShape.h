@@ -2,11 +2,9 @@
 #define COWPHYS_BOXSHAPE_H
 
 #include "CowPhys/math/Vec3.h"
-#include "CowPhys/math/Box.h"
 #include "Shape.h"
 #include "MeshShape.h"
 #include "CompShape.h"
-#include "CowPhys/math/Raycast.h"
 
 namespace cp {
 
@@ -14,45 +12,44 @@ class BoxShape : public Shape {
 
 public:
 
-    BoxShape() : mHalfSize(1) {
-        setupGrid();
+    BoxShape() : BoxShape(Vec3U(1)) {
     }
 
-    BoxShape(Vec3f halfSize) : mHalfSize(halfSize) {
-        setupGrid();
+    explicit BoxShape(Vec3U halfSize) : mHalfSize(halfSize) {
+        setupSpheres();
     }
 
-    BoxShape(float halfX, float halfY, float halfZ) : mHalfSize(halfX, halfY, halfZ) {
-        setupGrid();
+    BoxShape(Unit halfX, Unit halfY, Unit halfZ) : BoxShape(Vec3U(halfX, halfY, halfZ)) {
     }
 
-    Vec3f getHalfSize() {
+    Vec3U getHalfSize() {
         return mHalfSize;
     }
 
-    template<class T>
-    Box<T> getBox(Vec3<T> pos, Quat<T> quat) {
-        return Box<T>(pos, mHalfSize.to<T>(), quat);
-    }
-
-    RaycastInfo raycast(Ray ray, Vec3d pos, Quatf rotation) override {
-        return Raycast::raycastBox(ray, getBox(pos, rotation.to<double>()));
-    }
-
-    std::vector<Vec3d> getVertices(Vec3d pos, Quatf rotation) override {
-        auto vertices = getBox(pos, rotation.to<double>()).getVertices();
-        return {vertices.begin(), vertices.end()};
-    }
 private:
 
-    void setupGrid() {
-        setGridDimension(static_cast<int>(mHalfSize.x / Shape::GridSize),
-                         static_cast<int>(mHalfSize.y / Shape::GridSize),
-                         static_cast<int>(mHalfSize.z / Shape::GridSize));
-        fillGrid(true);
+    void setupSpheres() {
+        auto radius = std::min(std::min(mHalfSize.x, mHalfSize.y), mHalfSize.z);
+
+        auto countX = static_cast<Unit>((mHalfSize.x * 2) / radius);
+        auto countY = static_cast<Unit>((mHalfSize.y * 2) / radius);
+        auto countZ = static_cast<Unit>((mHalfSize.z * 2) / radius);
+
+        for (Unit i = 0; i <= countX; ++i) {
+            for (Unit j = 0; j <= countY; ++j) {
+                for (Unit k = 0; k <= countZ; ++k) {
+                    auto pos = Vec3U(
+                            i * radius - mHalfSize.x,
+                            j * radius - mHalfSize.y,
+                            k * radius - mHalfSize.z
+                    );
+                    addSphere(SphereU(pos, radius));
+                }
+            }
+        }
     }
 
-    Vec3f mHalfSize;
+    Vec3U mHalfSize;
 
 };
 

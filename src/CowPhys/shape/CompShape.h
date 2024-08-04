@@ -4,45 +4,41 @@
 #include <utility>
 #include <vector>
 #include "Shape.h"
-#include "CowPhys/math/Quat.h"
 
 namespace cp {
 
-struct ShapeComposition {
-
-    ShapeComposition(Shape *shape, Vec3d pos, Quatf rotation = Quatf::identity()) : shape(shape), position(pos),
-                                                                                    rotation(rotation) {}
-
+struct Comp {
     Shape *shape;
-    Vec3d position;
-    Quatf rotation;
+    Vec3U position;
 };
 
 class CompShape : public Shape {
 
 public:
 
-    CompShape() = default;
-
-    explicit CompShape(std::vector<ShapeComposition> compositions) : mComposites(std::move(compositions)) {
-
+    explicit CompShape() {
     }
 
-    void addShape(Shape *shape, Vec3d pos, Quatf rotation = Quatf::identity()) {
-        mComposites.emplace_back(shape, pos, rotation);
+    void addShape(Shape *shape, Vec3U pos) {
+        auto comp = Comp();
+        comp.shape = shape;
+        comp.position = pos;
+        mCompositions.push_back(comp);
+
+        for (auto sphere: shape->getSpheres()) {
+            sphere.moveBy(pos);
+            addSphere(sphere);
+        }
     }
 
-    ShapeComposition getShape(size_t index) {
-        return mComposites[index];
-    }
-
-    size_t getShapesCount() {
-        return mComposites.size();
+    const std::vector<Comp> &getComposition() {
+        return mCompositions;
     }
 
 
 private:
-    std::vector<ShapeComposition> mComposites;
+    std::vector<Comp> mCompositions;
+
 
 };
 

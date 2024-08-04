@@ -22,8 +22,9 @@ public:
     Vec3<T> p1;
     Vec3<T> p2;
 
-
 };
+
+typedef Triangle<Unit> TriangleU;
 
 }
 

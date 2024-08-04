@@ -5,7 +5,6 @@
 #include <vector>
 #include "Shape.h"
 #include "CowPhys/math/Triangle.h"
-#include "CowPhys/math/Quat.h"
 
 namespace cp {
 
@@ -15,15 +14,11 @@ public:
 
     MeshShape() {}
 
-    MeshShape(std::vector<Triangle<double>> triangles) : mTriangles(std::move(triangles)) {
+    MeshShape(std::vector<TriangleU> triangles) : mTriangles(std::move(triangles)) {
         toCounterWise();
     }
 
-    void addTriangle(Triangle<double> triangle) {
-        mTriangles.emplace_back(triangle);
-    }
-
-    const std::vector<Triangle<double>> &getTriangles() {
+    const std::vector<TriangleU> &getTriangles() {
         return mTriangles;
     }
 
@@ -37,17 +32,17 @@ private:
         }
     }
 
-    bool isClockwise(const Triangle<double> &triangle) const {
+    bool isClockwise(const TriangleU &triangle) const {
         const auto &a = triangle.p0;
         const auto &b = triangle.p1;
         const auto &c = triangle.p2;
         auto ab = b - a;
         auto ac = c - a;
         auto crossProduct = ab.cross(ac);
-        return crossProduct.z > 0.0;
+        return crossProduct.z > 0;
     }
 
-    std::vector<Triangle<double>> mTriangles;
+    std::vector<TriangleU> mTriangles;
 
 };
 

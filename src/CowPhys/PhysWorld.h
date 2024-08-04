@@ -2,24 +2,41 @@
 #define COWPHYS_PHYSWORLD_H
 
 #include <vector>
+#include "CollisionChecker.h"
 #include "body/Body.h"
 #include "CowPhys/body/DynBody.h"
 #include "CowPhys/body/StaticBody.h"
-#include "WorldRaycast.h"
-#include "WorldRaycast.h"
-#include "CowPhys/shape/ShapeCollider.h"
+#include "interface/ContactListener.h"
+#include "interface/MovementListener.h"
 
 namespace cp {
+
+struct WorldRaycast {
+    Unit distance;
+    Vec3U contact;
+    Shape *shape;
+    Body *body;
+};
 
 class PhysWorld {
 
 public:
 
-    void update(double deltaTime);
+    PhysWorld();
 
-    WorldRaycast raycast(Vec3d pos, Vec3d to, double maxRange);
+    ~PhysWorld();
 
-    DynBody *createDynBody(Shape *shape, Vec3d pos) {
+    void update();
+
+    WorldRaycast raycast(Vec3U pos, Vec3U dir, Body *bodyToIgnore = nullptr);
+
+    void applyForceToAllDynBodies(Vec3U force) {
+        for (auto &body: mDynBodies) {
+            body->applyForce(force);
+        }
+    }
+
+    DynBody *createDynBody(Shape *shape, Vec3U pos) {
         auto newBody = new DynBody(shape);
         newBody->setPos(pos);
         mDynBodies.push_back(newBody);
@@ -30,7 +47,7 @@ public:
         return mDynBodies;
     }
 
-    StaticBody *createStaticBody(Shape *shape, Vec3d pos) {
+    StaticBody *createStaticBody(Shape *shape, Vec3U pos) {
         auto newBody = new StaticBody(shape);
         newBody->setPos(pos);
         mStaticBodies.push_back(newBody);
@@ -41,10 +58,21 @@ public:
         return mStaticBodies;
     }
 
-private:
-    void resolveCollision(DynBody *bodyA, DynBody *bodyB, ShapeCollision &collision, double deltaTime);
+    void setContactListener(ContactListener *contactListener) {
+        mContactListener = contactListener;
+    }
 
-    void resolveCollision(DynBody *bodyA, StaticBody *bodyB, ShapeCollision &collision, double deltaTime);
+    void setMovementListener(MovementListener *movementListener) {
+        mMovementListener = movementListener;
+    }
+
+private:
+    void resolveCollision(DynBody *bodyA, DynBody *bodyB, CollisionInfo &collision);
+
+    void resolveCollision(DynBody *bodyA, StaticBody *bodyB, CollisionInfo &collision);
+
+    ContactListener *mContactListener;
+    MovementListener *mMovementListener;
 
     std::vector<DynBody *> mDynBodies;
     std::vector<StaticBody *> mStaticBodies;

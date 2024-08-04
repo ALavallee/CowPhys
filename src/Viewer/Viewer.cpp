@@ -17,13 +17,13 @@ Viewer::Viewer() : mWorld() {
     mCamera.projection = CAMERA_PERSPECTIVE;
     SetTargetFPS(60);
 
-    auto t0 = cp::Triangle<double>(cp::Vec3d(0, 0, 0), cp::Vec3d(10, 0, 0), cp::Vec3d(10, 0, 10));
+    /*auto t0 = cp::Triangle<double>(cp::Vec3d(0, 0, 0), cp::Vec3d(10, 0, 0), cp::Vec3d(10, 0, 10));
     auto t1 = cp::Triangle<double>(cp::Vec3d(10, 0, 10), cp::Vec3d(0, 0, 10), cp::Vec3d(0, 0, 0));
-    auto test = mWorld.createStaticBody(new cp::BoxShape(10, 0.1, 10), cp::Vec3d(0, 0, 0));
+    auto test = mWorld.createStaticBody(new cp::BoxShape(10, 0.1, 10), cp::Vec3d(0, 0, 0));*/
 
-    auto a = mWorld.createDynBody(new cp::BoxShape(.5, .5, .5), cp::Vec3d(0, 2, 0));
-    a->setRotation(cp::Quatf::fromEuler(0, 3.1415 / 4.0, 3.1415 / 4.0));
+    //auto a = mWorld.createDynBody(new cp::BoxShape(50, 50, 50), cp::Vec3U(0, 2, 0));
     //auto b = mWorld.createDynBody(new cp::BoxShape(.5, .5, .5), cp::Vec3d(0.01, 4, 0));
+    auto c = mWorld.createStaticBody(new cp::BoxShape(500, 50, 500), cp::Vec3U());
 
 
     /*auto subOne = new cp::BoxShape(.2, .2, .2);
@@ -47,23 +47,27 @@ void Viewer::run() {
 
 void Viewer::update() {
 
-    for (auto body: mWorld.getDynBodies()) {
-        body->applyForce(cp::Vec3f(0, -9.81 * (1.0 / 60.0), 0));
-    }
-
-
-    mWorld.update(1.0 / 60.0);
+    mWorld.applyForceToAllDynBodies(cp::Vec3U(0, -8, 0));
+    mWorld.update();
 
     if (IsKeyPressed(KEY_Q)) {
-        auto body = mWorld.createDynBody(new cp::BoxShape(cp::Vec3f(0.5)),
-                                         cp::Vec3d(-3, 3, 0));
-        body->applyForce(cp::Vec3f(10, 0, 0));
+        auto body = mWorld.createDynBody(new cp::BoxShape(50, 50, 50), cp::Vec3U(-300, 150, 0));
+        body->applyForce(cp::Vec3U(70, 0, 0));
     }
 
     if (IsKeyPressed(KEY_W)) {
-        auto body = mWorld.createDynBody(new cp::BoxShape(cp::Vec3f(0.5)),
-                                         cp::Vec3d(3, 3, 0));
-        body->applyForce(cp::Vec3f(-10, 0, 0));
+        auto body = mWorld.createDynBody(new cp::BoxShape(50, 50, 50), cp::Vec3U(300, 150, 0));
+        body->setRotation(cp::Vec3Small(0, 40, 40));
+        body->applyForce(cp::Vec3U(-70, 0, 0));
+    }
+
+    if (IsKeyPressed(KEY_E)) {
+        auto subOne = new cp::BoxShape(20, 20, 20);
+        auto subTwo = new cp::BoxShape(20, 20, 20);
+        auto comp = new cp::CompShape();
+        comp->addShape(subOne, cp::Vec3U());
+        comp->addShape(subTwo, cp::Vec3U(100, 100, 100));
+        mWorld.createDynBody(comp, cp::Vec3U(0, 300, 0));
     }
 }
 
@@ -73,31 +77,18 @@ void Viewer::draw() {
     ClearBackground(RAYWHITE);
     BeginMode3D(mCamera);
 
-
-    Ray ray = GetScreenToWorldRay(GetMousePosition(), mCamera);
-    auto raycast = mWorld.raycast(ViewerHelper::vec3ToVec3(ray.position),
-                                  ViewerHelper::vec3ToVec3(ray.direction), 1000);
-
     Color colors[] = {RED, BLUE, GREEN, PURPLE};
 
     int current = 0;
 
     for (auto body: mWorld.getDynBodies()) {
-        if (raycast.body_hit != body) {
-            drawBody(body, colors[++current % 4]);
-        } else {
-            drawBody(body, BLACK);
-        }
+        drawBody(body, colors[++current % 4]);
     }
 
     current = 0;
 
     for (auto body: mWorld.getStaticBodies()) {
-        if (raycast.body_hit != body) {
-            drawBody(body, colors[++current % 4]);
-        } else {
-            drawBody(body, BLACK);
-        }
+        drawBody(body, colors[++current % 4]);
     }
 
     EndMode3D();
@@ -105,27 +96,55 @@ void Viewer::draw() {
 }
 
 void Viewer::drawBody(cp::Body *body, Color color) {
+
+    if (IsKeyDown(KEY_LEFT_SHIFT)) {
+        for (auto sphere: body->getShape()->getSpheres()) {
+            sphere.rotateBy(body->getRotation().to<cp::Unit>());
+            sphere.moveBy(body->getPos());
+            DrawSphere(ViewerHelper::vec3ToVec3(sphere.getPosition()),
+                       static_cast<float>(sphere.getRadius()) / 100.f, BLUE);
+        }
+
+        return;
+    }
+
+    Vector2 mousePos = GetMousePosition();
+    auto ray = GetScreenToWorldRay(mousePos, mCamera);
+
+    auto cameraPos = ViewerHelper::vec3ToVec3(ray.position);
+    auto cameraDir = ViewerHelper::vec3ToVec3(ray.direction);
+    auto worldRay = mWorld.raycast(cameraPos, cameraDir);
+    if (worldRay.body == body) {
+        color = WHITE;
+    }
+
     color.a = 100;
 
     rlPushMatrix();
 
     // Translate to the body's position
-    rlTranslatef(body->getPos().x, body->getPos().y, body->getPos().z);
+    Vector3 pos = ViewerHelper::vec3ToVec3(body->getPos());
+    rlTranslatef(pos.x, pos.y, pos.z);
 
     // Apply the rotation
-    auto quat = body->getRotation();
-    Quaternion rotation = (Quaternion) {quat.x, quat.y, quat.z, quat.w};
-    rlMultMatrixf(MatrixToFloat(QuaternionToMatrix(rotation)));
+    auto rotation = body->getRotation();
+    rotation = rotation % 512;
+    float rotX = ((2.f * 3.1415f) * static_cast<float>(rotation.x)) / 512.f;
+    float rotY = ((2.f * 3.1415f) * static_cast<float>(rotation.y)) / 512.f;
+    float rotZ = ((2.f * 3.1415f) * static_cast<float>(rotation.z)) / 512.f;
+    auto quat = QuaternionFromEuler(rotX, rotY, rotZ);
+    rlMultMatrixf(MatrixToFloat(QuaternionToMatrix(quat)));
 
     // Draw at the origin (since we already translated to the body's position)
 
     cp::Shape *shape = body->getShape();
     auto boxShape = dynamic_cast<cp::BoxShape *>(shape);
     if (boxShape != nullptr) {
+        Vector3 halfSize = ViewerHelper::vec3ToVec3(boxShape->getHalfSize());
         DrawCube((Vector3) {0, 0, 0},
-                 boxShape->getHalfSize().x * 2.0,
-                 boxShape->getHalfSize().y * 2.0,
-                 boxShape->getHalfSize().z * 2.0, color);
+                 halfSize.x * 2,
+                 halfSize.y * 2,
+                 halfSize.z * 2, color);
     }
 
     auto meshShape = dynamic_cast<cp::MeshShape *>(shape);
@@ -140,20 +159,19 @@ void Viewer::drawBody(cp::Body *body, Color color) {
 
     auto compShape = dynamic_cast<cp::CompShape *>(shape);
     if (compShape != nullptr) {
-        for (size_t i = 0; i < compShape->getShapesCount(); ++i) {
-            auto comp = compShape->getShape(i);
+        for (auto comp: compShape->getComposition()) {
             auto subBox = dynamic_cast<cp::BoxShape *>(comp.shape);
             if (subBox != nullptr) {
+                Vector3 halfSize = ViewerHelper::vec3ToVec3(subBox->getHalfSize());
                 DrawCube(ViewerHelper::vec3ToVec3(comp.position),
-                         subBox->getHalfSize().x * 2.0,
-                         subBox->getHalfSize().y * 2.0,
-                         subBox->getHalfSize().z * 2.0, color);
+                         halfSize.x * 2,
+                         halfSize.y * 2,
+                         halfSize.z * 2, color);
             }
         }
     }
 
     rlPopMatrix();
-
 }
 
 }

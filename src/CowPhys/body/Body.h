@@ -3,70 +3,66 @@
 
 #include <vector>
 #include <iostream>
-#include "CowPhys/CowPhys.h"
 #include "CowPhys/math/Vec3.h"
-#include "CowPhys/math/Box.h"
-#include "CowPhys/math/Quat.h"
-#include "CowPhys/math/Mat3.h"
 #include "CowPhys/math/AABB.h"
 #include "CowPhys/shape/Shape.h"
 #include "CowPhys/shape/BoxShape.h"
 #include "CowPhys/shape/MeshShape.h"
 #include "CowPhys/shape/CompShape.h"
+#include "Collision.h"
 
 namespace cp {
 
 class Body {
 public:
-    explicit Body(Shape *shape) : mShape(shape), mMass(1), mRestitution(0.2),
-                                  mFriction(0.8), mRotation(Quatf::identity()) {
+
+    explicit Body(Shape *shape) : mShape(shape), mMass(1), mRestitution(1),
+                                  mFriction(1), mRotation(), mUserData(nullptr) {
     }
 
-    RaycastInfo raycast(Ray ray) {
-        return mShape->raycast(ray, getPos(), getRotation());
+    virtual void update() {
+        for (auto &collision: mCollisions) {
+            collision.update();
+        }
     }
 
     Shape *getShape() {
         return mShape;
     }
 
-    void setPos(const Vec3<Coord> &pos) {
+    void setPos(const Vec3U &pos) {
         mPosition = pos;
     }
 
-    Vec3<Coord> getPos() const {
+    Vec3U getPos() const {
         return mPosition;
     }
 
-    void setMass(float mass) {
+    void setMass(SmallUnit mass) {
         mMass = mass;
     }
 
-    float getMass() const {
+    SmallUnit getMass() const {
         return mMass;
     }
 
-    float getMassInverse() const {
-        return 1.0f / mMass;
-    }
-
-    void setRotation(const Quatf &rotation) {
+    void setRotation(const Vec3Small &rotation) {
         mRotation = rotation;
     }
 
-    Quatf getRotation() const {
+    Vec3Small getRotation() const {
         return mRotation;
     }
 
-    void setRestitution(float restitution) {
+    void setRestitution(SmallUnit restitution) {
         mRestitution = restitution;
     }
 
-    float getRestitution() const {
+    SmallUnit getRestitution() const {
         return mRestitution;
     }
 
-    float getFriction() const {
+    SmallUnit getFriction() const {
         return mFriction;
     }
 
@@ -78,19 +74,53 @@ public:
         return mUserData;
     }
 
+    bool raycast(Vec3U pos, Vec3U dir, Unit &t) {
+        bool found = false;
+        for (auto sphere: mShape->getSpheres()) {
+            sphere.rotateBy(getRotation().to<Unit>());
+            sphere.moveBy(getPos());
+            Unit current;
+            if (sphere.raycast(pos, dir, current)) {
+                if (current < t) {
+                    t = current;
+                }
+                found = true;
+            }
+        }
 
-private:
-
-    void updateInertiaTensor() {
+        return found;
 
     }
 
-    float mMass;
-    float mRestitution;
-    float mFriction;
-    Vec3<Coord> mPosition;
-    Quatf mRotation;
+    bool hasCollisionWith(Body *body) {
+        for (auto &collision: mCollisions) {
+            if (collision.getCollided() == body) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    void addCollision(Body *body) {
+        if (!hasCollisionWith(body)) {
+            mCollisions.emplace_back(body);
+        }
+    }
+
+    const std::vector<Collision> &getCollisions() {
+        return mCollisions;
+    }
+
+private:
+
+    Vec3U mPosition;
+    Vec3Small mRotation;
     Shape *mShape;
+    SmallUnit mMass;
+    SmallUnit mRestitution;
+    SmallUnit mFriction;
+    std::vector<Collision> mCollisions;
     void *mUserData;
 };
 

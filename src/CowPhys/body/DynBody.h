@@ -1,70 +1,53 @@
 #ifndef COWPHYS_DYNBODY_H
 #define COWPHYS_DYNBODY_H
 
-#include "CowPhys/math/Quat.h"
-#include "CowPhys/math/Mat3.h"
 #include "Body.h"
 
 namespace cp {
 
 class DynBody : public Body {
 
+    static int constexpr VelocityToPosition = 8;
+
 public:
 
     explicit DynBody(Shape *shape) : Body(shape), mAllowRotation(true) {
-        updateInertiaTensor();
     }
 
-    void update(double deltaTime) {
-        updateInertiaTensor();
-        setPos(getPos() + mVelocity.to<double>() * deltaTime);
-        if (mAllowRotation) {
-            auto angularVelocityQuat = Quatf(mAngularVelocity.x, mAngularVelocity.y, mAngularVelocity.z, 0);
-            Quat deltaRotation = angularVelocityQuat * getRotation() * (0.5f * static_cast<float>(deltaTime));
-            setRotation((getRotation() + deltaRotation).normalize());
-        }
+    void update() override {
+        Body::update();
+        setPos(getPos() + mVelocity / VelocityToPosition);
+        setRotation(getRotation() + mAngularVelocity.to<SmallUnit>() / VelocityToPosition);
+        applyFriction();
     }
 
-    void applyFriction(double deltaTime) {
-        if (mAllowRotation) {
-            mVelocity = mVelocity * (1.f - getFriction() * static_cast<float>(deltaTime));
-        }
-    }
-
-    void applyDamping(double deltaTime) {
-        if (mAllowRotation) {
-            mAngularVelocity = mAngularVelocity * static_cast<float>(std::pow(1.0 - 0.98, deltaTime));
-        }
-    }
-
-    void applyForce(const Vec3f &force) {
-        Vec3f acceleration = force / getMass();
+    void applyForce(const Vec3U &force) {
+        Vec3U acceleration = force / getMass();
         mVelocity = mVelocity + acceleration;
     }
 
-    void applyForceAt(const Vec3f &force, const Vec3f &pos) {
+    void applyForceAt(const Vec3U &force, const Vec3U &at) {
         applyForce(force);
         if (mAllowRotation) {
-            Vec3f relativePos = pos - getPos().to<float>();
-            Vec3f torque = relativePos.cross(force);
-            Vec3f angularAcceleration = mInertiaTensor.inverse() * torque;
-            mAngularVelocity = mAngularVelocity + angularAcceleration;
+            auto relative = (at - getPos()).normalize();
+            auto torque = relative.cross(force);
+            mAngularVelocity = mAngularVelocity + torque;
         }
     }
 
-    Vec3f getVelocity() const {
+    Vec3U getVelocity() const {
         return mVelocity;
     }
 
-    void setVelocity(const Vec3f &velocity) {
+    void setVelocity(const Vec3U &velocity) {
         mVelocity = velocity;
     }
 
-    void setAngularVelocity(const Vec3f &angular) {
+    void setAngularVelocity(const Vec3U &angular) {
         mAngularVelocity = angular;
     }
 
-    Vec3f getAngularVelocity() const {
+    Vec3U getAngularVelocity() const {
         return mAngularVelocity;
     }
 
@@ -72,31 +55,29 @@ public:
         mAllowRotation = allowed;
     }
 
-    bool isRotationAllowed() {
+    bool isRotationAllowed() const {
         return mAllowRotation;
     }
 
 private:
 
-    void updateInertiaTensor() {
-        auto shape = getShape();
-        auto box = dynamic_cast<BoxShape *>(shape);
-        if (box != nullptr) {
-            float width = box->getHalfSize().x * 2;
-            float height = box->getHalfSize().y * 2;
-            float depth = box->getHalfSize().z * 2;
-            float massDiv12 = getMass() / 12.0f;
-            mInertiaTensor = Mat3::diagonal(massDiv12 * (height * height + depth * depth),
-                                            massDiv12 * (width * width + depth * depth),
-                                            massDiv12 * (width * width + height * height));
+    void applyFriction() {
+        auto friction = getFriction();
+        for (int i = 0; i < 3; ++i) {
+            if (mVelocity[i] >= friction) {
+                mVelocity[i] = mVelocity[i] - friction;
+            } else if (mVelocity[i] <= -friction) {
+                mVelocity[i] = mVelocity[i] + friction;
+            } else {
+                mVelocity[i] = 0;
+            }
         }
     }
 
-    Vec3f mVelocity;
-    Vec3f mAngularVelocity;
-    Mat3 mInertiaTensor;
+    Vec3U mVelocity;
+    Vec3U mAngularVelocity;
     bool mAllowRotation;
-    
+
 };
 
 

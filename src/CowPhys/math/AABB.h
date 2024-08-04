@@ -2,7 +2,6 @@
 #define COWPHYS_AABB_H
 
 #include "Vec3.h"
-#include "Quat.h"
 
 namespace cp {
 
@@ -17,9 +16,9 @@ public:
 
     bool collides(AABB<T> &other) {
         Vec3<T> delta = pos - other.pos;
-        return std::abs(delta.x) <= (halfSize.x + other.halfSize.x) &&
-               std::abs(delta.y) <= (halfSize.y + other.halfSize.y) &&
-               std::abs(delta.z) <= (halfSize.z + other.halfSize.z);
+        return delta.x <= (halfSize.x + other.halfSize.x) &&
+               delta.y <= (halfSize.y + other.halfSize.y) &&
+               delta.z <= (halfSize.z + other.halfSize.z);
     }
 
 };

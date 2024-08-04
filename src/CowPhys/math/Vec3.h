@@ -3,6 +3,8 @@
 
 #include <cmath>
 #include <string>
+#include <numeric>
+#include "Unit.h"
 
 namespace cp {
 
@@ -49,6 +51,10 @@ public:
         return Vec3(x / scalar.x, y / scalar.y, z / scalar.z);
     }
 
+    Vec3 operator%(T scalar) const {
+        return Vec3(x % scalar, y % scalar, z % scalar);
+    }
+
     bool operator==(const Vec3 &rhs) const {
         return x == rhs.x && y == rhs.y && z == rhs.z;
     }
@@ -75,19 +81,12 @@ public:
         return x * x + y * y + z * z;
     }
 
-    // Linear interpolation between this vector and another vector
-    Vec3<T> lerp(const Vec3<T> &rhs, T t) const {
-        return Vec3<T>(x + (rhs.x - x) * t, y + (rhs.y - y) * t, z + (rhs.z - z) * t);
-    }
-
     Vec3 normalize() const {
-        T length = std::sqrt(x * x + y * y + z * z);
-        if (length > 0.0) {
-            return Vec3(x / length, y / length, z / length);
-        } else {
-            // Return the original vector if the length is 0 to avoid division by zero
-            return *this;
+        int maxComponent = std::max(std::abs(x), std::max(std::abs(y), std::abs(z)));
+        if (maxComponent == 0) {
+            return {0, 0, 0}; // Handle the zero vector case
         }
+        return {x / maxComponent, y / maxComponent, z / maxComponent};
     }
 
     Vec3<T> cross(const Vec3 &rhs) const {
@@ -100,12 +99,37 @@ public:
         return x * rhs.x + y * rhs.y + z * rhs.z;
     }
 
-    Vec3<T> align(T alignTo) {
-        Vec3<T> result;
-        result.x = std::round(x * alignTo) / alignTo;
-        result.y = std::round(y * alignTo) / alignTo;
-        result.z = std::round(z * alignTo) / alignTo;
-        return result;
+    void rotate(const Vec3 &euler) {
+        // Convert Euler angles from [0, 512] range to radians [0, 2*pi]
+        constexpr double factor = 2.0 * M_PI / 512.0;
+        double radX = euler.x * factor;
+        double radY = euler.y * factor;
+        double radZ = euler.z * factor;
+
+        double cx = std::cos(radX);
+        double sx = std::sin(radX);
+        double cy = std::cos(radY);
+        double sy = std::sin(radY);
+        double cz = std::cos(radZ);
+        double sz = std::sin(radZ);
+
+        // Rotation matrices for each axis
+        double tempX = x;
+        double tempY = y * cx - z * sx;
+        double tempZ = y * sx + z * cx;
+
+        double tempX2 = tempX * cy + tempZ * sy;
+        double tempY2 = tempY;
+        double tempZ2 = -tempX * sy + tempZ * cy;
+
+        double newX = tempX2 * cz - tempY2 * sz;
+        double newY = tempX2 * sz + tempY2 * cz;
+        double newZ = tempZ2;
+
+        // Assign rotated values back to integers
+        x = static_cast<T>(std::round(newX));
+        y = static_cast<T>(std::round(newY));
+        z = static_cast<T>(std::round(newZ));
     }
 
     Vec3<T> round() {
@@ -129,11 +153,11 @@ public:
         return "( " + std::to_string(x) + ", " + std::to_string(y) + ", " + std::to_string(z) + " )";
     }
 
-    T operator[](int index) {
+    T &operator[](int index) {
         switch (index) {
             case 0:
                 return x;
-            case 1 :
+            case 1:
                 return y;
             default:
                 return z;
@@ -145,9 +169,10 @@ public:
     T z;
 };
 
-typedef Vec3<int> Vec3i;
-typedef Vec3<float> Vec3f;
-typedef Vec3<double> Vec3d;
+typedef Vec3<Unit> Vec3U;
+typedef Vec3<SmallUnit> Vec3Small;
+typedef Vec3<TinyUnit> Vec3Tiny;
+typedef Vec3<MicroUnit> Vec3Micro;
 
 }
 
